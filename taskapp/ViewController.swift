@@ -2,9 +2,11 @@ import UIKit
 import RealmSwift  //追加
 import UserNotifications // 追加
 
-class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate{
 
     @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var searchBar: UISearchBar!
+
     
     // Realmインスタンスを取得する
     let realm = try! Realm()
@@ -20,6 +22,53 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         tableView.delegate = self
         tableView.dataSource = self
+        
+        searchBar.delegate = self
+        print(taskArray)
+        
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        let inputViewController: InputViewController = segue.destination as! InputViewController
+        
+        if segue.identifier == "cellSegue" {
+            let indexPath = self.tableView.indexPathForSelectedRow
+            inputViewController.task = taskArray[indexPath!.row]
+        } else {
+            let task = Task()
+            task.date = Date()
+            
+            let allTasks = realm.objects(Task.self)
+            if allTasks.count != 0 {
+                task.id = allTasks.max(ofProperty: "id")! + 1
+            }
+            
+            inputViewController.task = task
+        }
+        
+    }
+    
+    // 入力画面から戻ってきた時にTable Viewを更新させる
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tableView.reloadData()
+    }
+    
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        let realm = try! Realm()
+        
+        if searchText.isEmpty {
+            taskArray = realm.objects(Task.self)
+        } else {
+            taskArray = realm.objects(Task.self).filter("category BEGINSWITH %@", searchText)
+        }
+        
+        tableView.reloadData()
+        
     }
     
     // MARK: UITableViewDataSourceプロトコルのメソッド
@@ -31,7 +80,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     // 各セルの内容を返すメソッド
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         // 再利用可能な cell を得る
-        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath as IndexPath)
         
         // Cellに値を設定する。 -- ここから　--
         let task = taskArray[indexPath.row]
@@ -40,7 +89,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm"
         
-        let dateString: String = formatter.string(from: task.date)
+        let dateString: String = formatter.string(from: task.date as Date)
         cell.detailTextLabel?.text = dateString
         // --- ここまで追加 ---
         
@@ -82,37 +131,13 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                 for request in requests {
                     print("/---------------")
                     print(request)
-                    print("/---------------")
+                    print("---------------/")
                 }
             }
         } // --- ここまで追加・変更 ---
     }
     
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        let inputViewController: InputViewController = segue.destination as! InputViewController
-        
-        if segue.identifier == "cellSegue" {
-            let indexPath = self.tableView.indexPathForSelectedRow
-            inputViewController.task = taskArray[indexPath!.row]
-        } else {
-            let task = Task()
-            task.date = Date()
-            
-            let allTasks = realm.objects(Task.self)
-            if allTasks.count != 0 {
-                task.id = allTasks.max(ofProperty: "id")! + 1
-            }
-            
-            inputViewController.task = task
-        }
-        
-    }
     
-    // 入力画面から戻ってきた時にTable Viewを更新させる
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        tableView.reloadData()
-    }
 
 }
 

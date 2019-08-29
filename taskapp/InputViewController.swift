@@ -1,11 +1,12 @@
 import UIKit
-import RealmSwift // 追加する
+import RealmSwift // 追加
 import UserNotifications // 追加
 
 class InputViewController: UIViewController {
 
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var contentsTextView: UITextView!
+    @IBOutlet weak var categoryTextField: UITextField!
     @IBOutlet weak var datePicker: UIDatePicker!
     
     let realm = try! Realm() // 追加する
@@ -20,13 +21,20 @@ class InputViewController: UIViewController {
         
         titleTextField.text = task.title
         contentsTextView.text = task.contents
-        datePicker.date = task.date
+        categoryTextField.text = task.category
+        datePicker.date = task.date as Date
+    }
+    
+    @objc func dismissKeyboard() {
+        // キーボードを閉じる
+        view.endEditing(true)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         try! realm.write {
             self.task.title = self.titleTextField.text!
             self.task.contents = self.contentsTextView.text
+            self.task.category = self.categoryTextField.text!
             self.task.date = self.datePicker.date
             self.realm.add(self.task, update: true)
         }
@@ -39,6 +47,9 @@ class InputViewController: UIViewController {
     // タスクのローカル通知を登録する --- ここから ---
     func setNotification(task: Task) {
         let content = UNMutableNotificationContent()
+//        content.title = task.title
+//        content.body  = task.contents       // bodyが空だと音しか出ない
+//        content.sound = UNNotificationSound.default()
         // タイトルと内容を設定（中身がない場合メッセージつ無しで音だけの通知になるので「(xxなし)」を表示する）
         if task.title == "" {
             content.title = "(タイトルなし)"
@@ -76,10 +87,12 @@ class InputViewController: UIViewController {
         }
     }  // --- ここまで追加 ---
     
-    @objc func dismissKeyboard() {
-        // キーボードを閉じる
-        view.endEditing(true)
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
     }
+    
+    
     
     
 
